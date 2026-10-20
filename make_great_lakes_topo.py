@@ -385,7 +385,6 @@ const Panel = L.Control.extend({
       <div id="readout">loading grids…</div>
       <label>Dataset</label>
       <select id="ds">${GRIDS.map((g, n) => `<option value="${n}">${g.name}</option>`).join("")}</select>
-      <div class="note" id="dsinfo"></div>
       <label>Display</label>
       <select id="mode">
         <option value="elev">Elevation (colour ramp)</option>
@@ -441,7 +440,6 @@ const showCtl = () => {
   $("elevCtl").style.display = state.mode === "elev" ? "" : "none";
   $("maskCtl").style.display = state.mode === "mask" ? "" : "none";
   $("diffCtl").style.display = state.mode === "diff" ? "" : "none";
-  $("dsinfo").textContent = GRIDS[state.ds].info;
 };
 $("ds").onchange = e => { state.ds = +e.target.value; showCtl(); render(); };
 $("mode").onchange = e => { state.mode = e.target.value; showCtl(); render(); };
