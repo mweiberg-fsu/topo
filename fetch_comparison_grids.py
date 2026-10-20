@@ -52,10 +52,6 @@ DATASETS = {
              "low water datum converted to IGLD85 (Superior 183.2, Mich/Huron 176.0, "
              "Erie 173.5, Ontario 74.2 m). Lake-specific boxes incl. nearby land; "
              "blank elsewhere. Block mean per 1′ cell; overlaps averaged."),
-    "gmted2010": dict(
-        name="GMTED2010 (15″ mean)",
-        info="USGS GMTED2010 mean statistic, 15 arc-sec. Land elevation only: lakes are "
-             "flat water surface, no bathymetry. Block mean per 1′ cell."),
     "etopo2": dict(
         name="ETOPO2v2c (2′)",
         info="NOAA NGDC ETOPO2v2c (2006), 2 arc-min, cell-centred; bilinearly interpolated."),
@@ -174,27 +170,6 @@ def get_glbathy(raw):
     return bm.result()
 
 
-def get_gmted(raw):
-    import tifffile
-    bm = BlockMean()
-    base = ("https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/topo/downloads/GMTED/"
-            "Global_tiles_GMTED/150darcsec/mea/")
-    for tile, folder in (("30N120W", "W120"), ("30N090W", "W090")):
-        name = f"{tile}_20101117_gmted_mea150.tif"
-        with tifffile.TiffFile(fetch(base + f"{folder}/{name}", os.path.join(raw, name))) as t:
-            p = t.pages[0]
-            dx, dy = p.tags["ModelPixelScaleTag"].value[:2]
-            x0, y0 = p.tags["ModelTiepointTag"].value[3:5]  # upper-left corner (PixelIsArea)
-            nodata = float(p.tags["GDAL_NODATA"].value) if "GDAL_NODATA" in p.tags else -32768
-            z = p.asarray().astype(float)
-            z[z == nodata] = np.nan
-        lon = x0 + (np.arange(z.shape[1]) + 0.5) * dx
-        lat = y0 - (np.arange(z.shape[0]) + 0.5) * dy
-        sy, sx = index_range(lat, S, N), index_range(lon, W, E)
-        bm.add(lon[sx], lat[sy], z[sy, sx])
-    return bm.result()
-
-
 def get_etopo2(raw):
     import netCDF4
     nc = os.path.join(raw, "ETOPO2v2c_f4.nc")
@@ -217,7 +192,6 @@ GETTERS = {
     "gebco2020": lambda raw: get_erddap_15s(raw, "GEBCO_2020", "elevation"),
     "srtm15": get_srtm15,
     "glbathy": get_glbathy,
-    "gmted2010": get_gmted,
     "etopo2": get_etopo2,
 }
 
