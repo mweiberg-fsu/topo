@@ -41,6 +41,10 @@ MIN_LAKE_KM2 = 1.0  # drop lakes/islands smaller than this
 # other datasets resampled to this ETOPO1 grid by fetch_comparison_grids.py (needs internet)
 COMPARE_NPZ = os.path.join(OUT_DIR, "great_lakes_compare_grids.npz")
 
+# CARTO basemap key (tiles show "API KEY REQUIRED" without one): env CARTO_API_KEY or a
+# gitignored .carto_key file next to the script. It ends up in index.html, as any web key does.
+CARTO_KEY_FILE = os.path.join(OUT_DIR, ".carto_key")
+
 # lake surface elevations (m above sea level, approx. long-term mean / IGLD85)
 LAKES = {
     "Superior": (47.7, -87.5, 183),
@@ -263,6 +267,7 @@ const GRIDS = __GRIDS__;  // [{key, name, info, b64}], GRIDS[0] = ETOPO1 (refere
 const STOPS = __STOPS__;
 const SHORES = __SHORES__;
 const NX = META.nx, NY = META.ny, D = META.dlon, FILL = META.fill;
+const CARTO_Q = META.carto_key ? "?key=" + encodeURIComponent(META.carto_key) : "";
 
 // int16 little-endian, row 0 = southernmost latitude, gzipped after differencing along rows
 async function decodeGrid(b64) {
@@ -353,13 +358,13 @@ const bases = {
     { attribution: "Tiles &copy; Esri", maxZoom: 18 }),
   "OpenStreetMap": L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     { attribution: "&copy; OpenStreetMap contributors", maxZoom: 18 }),
-  "Carto Light": L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+  "Carto Light": L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" + CARTO_Q,
     { attribution: "&copy; OpenStreetMap &copy; CARTO", maxZoom: 18 }),
 };
 bases["Carto Light"].addTo(map);
 const overlay = L.imageOverlay("data:,", [[latS, lonW], [latN, lonE]],
   { opacity: state.opacity, className: "topo-img" }).addTo(map);
-const labels = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png",
+const labels = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png" + CARTO_Q,
   { pane: "shadowPane", maxZoom: 18 });
 map.createPane("shores").style.zIndex = 450;  // above overlay, below popups
 const shoreLayer = (lines, style) => L.polyline(
@@ -525,11 +530,22 @@ def load_compare(lon, lat):
         return [dict(key=k, z=d[k], **meta[k]) for k in meta]
 
 
+def carto_key():
+    key = os.environ.get("CARTO_API_KEY", "").strip()
+    if not key and os.path.exists(CARTO_KEY_FILE):
+        with open(CARTO_KEY_FILE) as f:
+            key = f.read().strip()
+    if not key:
+        print("no CARTO key (CARTO_API_KEY or .carto_key): Carto basemap will be watermarked")
+    return key
+
+
 def make_html(lon, lat, z, shores, compare=()):
     meta = dict(nx=int(z.shape[1]), ny=int(z.shape[0]), dlon=1 / 60.0,
                 lon0=float(lon[0]), lat0=float(lat[0]),
                 i0=int(round((lon[0] + 180) * 60)), j0=int(round((lat[0] + 90) * 60)),
-                zmin=int(z.min()), zmax=int(z.max()), min_lake_km2=MIN_LAKE_KM2, fill=FILL)
+                zmin=int(z.min()), zmax=int(z.max()), min_lake_km2=MIN_LAKE_KM2, fill=FILL,
+                carto_key=carto_key())
     grids = [dict(key="etopo1", name="ETOPO1 Ice (1′)", z=z,
                   info="ETOPO1_Ice_grid.nc (NOAA NGDC 2009), 1 arc-min, grid-registered. "
                        "Reference grid for differences.")] + list(compare)
