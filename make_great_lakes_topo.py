@@ -408,11 +408,7 @@ const Panel = L.Control.extend({
           <button data-t="176">176 (Mich/Huron)</button><button data-t="183">183 (Superior)</button></div>
       </div>
       <label>Overlay opacity <span id="opv">${state.opacity}</span></label>
-      <input type="range" id="op" min="0" max="1" step="0.05" value="${state.opacity}" style="width:100%">
-      <div class="note">All datasets resampled to the ETOPO1 grid: ${NX}×${NY}, 1 arc-min,
-        grid-registered. Hover a cell to compare every dataset; click to pin.<br>
-        Lake beds are stored as elevation (lake surface − depth), so most lake floor is &gt; 0 m.<br>
-        Shorelines: GSHHG 2.3.7 full resolution (lakes ≥ ${META.min_lake_km2} km²).</div>`;
+      <input type="range" id="op" min="0" max="1" step="0.05" value="${state.opacity}" style="width:100%">`;
     L.DomEvent.disableClickPropagation(d);
     L.DomEvent.disableScrollPropagation(d);
     L.DomEvent.on(d, "mousemove", L.DomEvent.stopPropagation);
